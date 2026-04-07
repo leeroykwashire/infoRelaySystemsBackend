@@ -212,4 +212,4 @@ class StockLedgerSerializer(serializers.ModelSerializer):
             'quantity', 'balance_after', 'user', 'user_username', 'transaction_date',
             'reference_type', 'reference_id', 'remarks'
         ]
-        read_only_fields = '__all__'
+        read_only_fields = ('id',)
