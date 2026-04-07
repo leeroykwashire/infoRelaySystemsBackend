@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import User, Category, Item, Stock, GoodsReceived, GoodsIssue, StockLedger
+from .models import User, Category, Item, Stock, GoodsReceived, GoodsIssue, GoodsReturn, StockLedger
 
 
 # Custom JWT Token Serializer to include user information
@@ -195,6 +195,34 @@ class GoodsIssueSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Set issued_by to current user"""
         validated_data['issued_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+# GoodsReturnSerializer for stock RETURN transactions
+class GoodsReturnSerializer(serializers.ModelSerializer):
+    item_name = serializers.CharField(source='item.name', read_only=True)
+    item_unit = serializers.CharField(source='item.unit', read_only=True)
+    returned_by_username = serializers.CharField(source='returned_by.username', read_only=True)
+    issued_to = serializers.CharField(source='original_issue.issued_to', read_only=True)
+    
+    class Meta:
+        model = GoodsReturn
+        fields = [
+            'id', 'item', 'item_name', 'item_unit', 'quantity', 'returned_by', 
+            'returned_by_username', 'return_date', 'original_issue', 'issued_to',
+            'reason', 'reference_number'
+        ]
+        read_only_fields = ['id', 'returned_by', 'return_date']
+    
+    def validate_quantity(self, value):
+        """Ensure quantity is positive"""
+        if value <= 0:
+            raise serializers.ValidationError("Quantity must be greater than zero.")
+        return value
+    
+    def create(self, validated_data):
+        """Set returned_by to current user"""
+        validated_data['returned_by'] = self.context['request'].user
         return super().create(validated_data)
 
 

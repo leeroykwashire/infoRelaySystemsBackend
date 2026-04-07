@@ -187,15 +187,59 @@ class GoodsIssue(models.Model):
             )
 
 
+# GoodsReturn model for stock RETURN transactions
+class GoodsReturn(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name='goods_returns')
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    returned_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='goods_returns')
+    return_date = models.DateTimeField(auto_now_add=True)
+    original_issue = models.ForeignKey(GoodsIssue, on_delete=models.SET_NULL, null=True, blank=True, related_name='returns')
+    reason = models.TextField(help_text='Reason for return')
+    reference_number = models.CharField(max_length=100, blank=True, null=True)
+    
+    class Meta:
+        db_table = 'goods_return'
+        verbose_name = 'Goods Return'
+        verbose_name_plural = 'Goods Returns'
+        ordering = ['-return_date']
+    
+    def __str__(self):
+        return f"GR: {self.item.name} - {self.quantity} {self.item.unit} returned"
+    
+    def save(self, *args, **kwargs):
+        """Increase stock and create ledger entry on save"""
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        if is_new:
+            # Get or create stock for this item
+            stock, created = Stock.objects.get_or_create(item=self.item)
+            stock.quantity += self.quantity
+            stock.save()
+            
+            # Create stock ledger entry
+            StockLedger.objects.create(
+                item=self.item,
+                transaction_type='RETURN',
+                quantity=self.quantity,
+                balance_after=stock.quantity,
+                user=self.returned_by,
+                reference_type='GoodsReturn',
+                reference_id=self.id,
+                remarks=f"Return reason: {self.reason}"
+            )
+
+
 # StockLedger model for tracking all stock movements (history)
 class StockLedger(models.Model):
     TRANSACTION_TYPES = [
         ('IN', 'Stock In'),
         ('OUT', 'Stock Out'),
+        ('RETURN', 'Stock Return'),
     ]
     
     item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name='ledger_entries')
-    transaction_type = models.CharField(max_length=3, choices=TRANSACTION_TYPES)
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     balance_after = models.DecimalField(max_digits=10, decimal_places=2)
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name='ledger_entries')

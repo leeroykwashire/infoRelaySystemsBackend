@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 from .views import (
     CustomTokenObtainPairView, current_user_view,
     UserViewSet, CategoryViewSet, ItemViewSet, StockViewSet,
-    GoodsReceivedViewSet, GoodsIssueViewSet, StockLedgerViewSet,
+    GoodsReceivedViewSet, GoodsIssueViewSet, GoodsReturnViewSet, StockLedgerViewSet,
     StockReportView, IssuesReportView, LedgerReportView
 )
 
@@ -18,6 +18,7 @@ router.register(r'items', ItemViewSet, basename='item')
 router.register(r'stocks', StockViewSet, basename='stock')
 router.register(r'goods-received', GoodsReceivedViewSet, basename='goods-received')
 router.register(r'goods-issues', GoodsIssueViewSet, basename='goods-issue')
+router.register(r'goods-returns', GoodsReturnViewSet, basename='goods-return')
 router.register(r'ledger', StockLedgerViewSet, basename='ledger')
 
 # URL patterns

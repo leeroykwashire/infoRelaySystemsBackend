@@ -6,11 +6,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.models import Sum, Count
 from datetime import datetime
-from .models import User, Category, Item, Stock, GoodsReceived, GoodsIssue, StockLedger
+from .models import User, Category, Item, Stock, GoodsReceived, GoodsIssue, GoodsReturn, StockLedger
 from .serializers import (
     CustomTokenObtainPairSerializer,
     UserSerializer, CategorySerializer, ItemSerializer, StockSerializer,
-    GoodsReceivedSerializer, GoodsIssueSerializer, StockLedgerSerializer
+    GoodsReceivedSerializer, GoodsIssueSerializer, GoodsReturnSerializer, StockLedgerSerializer
 )
 
 
@@ -200,6 +200,38 @@ class GoodsIssueViewSet(viewsets.ModelViewSet):
         issued_to = self.request.query_params.get('issued_to', None)
         if issued_to:
             queryset = queryset.filter(issued_to__icontains=issued_to)
+        
+        return queryset
+
+
+# GoodsReturnViewSet for stock RETURN transactions
+class GoodsReturnViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing goods returns (stock RETURN).
+    Increases stock and creates ledger entry automatically.
+    """
+    queryset = GoodsReturn.objects.all()
+    serializer_class = GoodsReturnSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Optionally filter by item, user, or original issue"""
+        queryset = GoodsReturn.objects.all().select_related('item', 'returned_by', 'original_issue')
+        
+        # Filter by item
+        item = self.request.query_params.get('item', None)
+        if item:
+            queryset = queryset.filter(item__id=item)
+        
+        # Filter by user
+        user = self.request.query_params.get('user', None)
+        if user:
+            queryset = queryset.filter(returned_by__id=user)
+        
+        # Filter by original issue
+        original_issue = self.request.query_params.get('original_issue', None)
+        if original_issue:
+            queryset = queryset.filter(original_issue__id=original_issue)
         
         return queryset
 

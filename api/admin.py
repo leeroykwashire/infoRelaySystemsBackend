@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Category, Item, Stock, GoodsReceived, GoodsIssue, StockLedger
+from .models import User, Category, Item, Stock, GoodsReceived, GoodsIssue, GoodsReturn, StockLedger
 
 
 # Custom User Admin with role field
@@ -77,6 +77,17 @@ class GoodsIssueAdmin(admin.ModelAdmin):
     ordering = ['-issued_date']
     readonly_fields = ['issued_date']
     autocomplete_fields = ['item', 'issued_by']
+
+
+# GoodsReturn Admin
+@admin.register(GoodsReturn)
+class GoodsReturnAdmin(admin.ModelAdmin):
+    list_display = ['item', 'quantity', 'returned_by', 'return_date', 'reason']
+    list_filter = ['return_date', 'returned_by']
+    search_fields = ['item__name', 'reason', 'reference_number']
+    ordering = ['-return_date']
+    readonly_fields = ['return_date']
+    autocomplete_fields = ['item', 'returned_by', 'original_issue']
 
 
 # StockLedger Admin (read-only)
